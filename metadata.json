@@ -1,0 +1,6 @@
+{
+  "name": "RafaelXD",
+  "description": "Hosting dan bagikan file tanpa batas dan perpendek tautan kamu untuk memudahkan produktivitas.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
