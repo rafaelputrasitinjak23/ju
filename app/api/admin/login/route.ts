@@ -1,7 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit } from '@/lib/rateLimiter';
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiter check: Max 5 login attempts per minute per IP
+    const rateLimit = checkRateLimit(req, {
+      identifier: 'admin_login',
+      limit: 5,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.success && rateLimit.response) {
+      return rateLimit.response;
+    }
+
     const body = await req.json();
     const { username, password } = body || {};
 

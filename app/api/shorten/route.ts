@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { saveShortUrl, getShortUrlById, getAllShortUrls, deleteShortUrl } from '@/lib/db';
 import { ShortUrlRecord } from '@/lib/types';
+import { checkRateLimit } from '@/lib/rateLimiter';
 
 function generateShortCode(length = 6): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -13,6 +14,17 @@ function generateShortCode(length = 6): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiter check: Max 15 short URLs per minute per IP
+    const rateLimit = checkRateLimit(req, {
+      identifier: 'shorten',
+      limit: 15,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.success && rateLimit.response) {
+      return rateLimit.response;
+    }
+
     const body = await req.json();
     let { targetUrl, customAlias, title } = body;
 

@@ -218,14 +218,12 @@ export default function AdminPage() {
       <header className="border-b border-zinc-800/80 bg-zinc-900/90 backdrop-blur-md py-4 px-6 sticky top-0 z-30 shadow-md">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl border border-zinc-800 flex items-center justify-center shadow-xs overflow-hidden bg-zinc-950 shrink-0">
-              <img
-                src="https://rafaelxd.my.id/raw/exnqacv9"
-                alt="RafaelXD Logo"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
+            <img
+              src="https://rafaelxd.my.id/raw/sefqmrht"
+              alt="RafaelXD Logo"
+              className="h-10 sm:h-12 w-auto object-contain"
+              referrerPolicy="no-referrer"
+            />
             <div>
               <h1 className="text-lg font-bold text-white font-serif-elegant">Panel Kontrol Admin</h1>
               <p className="text-xs text-zinc-400 font-outfit">Pengaturan Server, Storage Bot, & Database MongoDB</p>

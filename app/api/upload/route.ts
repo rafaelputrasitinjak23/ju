@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { sendFileToTelegram } from '@/lib/telegram';
 import { saveFileRecord } from '@/lib/db';
 import { FileRecord } from '@/lib/types';
+import { checkRateLimit } from '@/lib/rateLimiter';
 
 // Simple nano ID generator
 function generateShortId(length = 8): string {
@@ -15,6 +16,17 @@ function generateShortId(length = 8): string {
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limiter check: Max 10 uploads per minute per IP
+    const rateLimit = checkRateLimit(req, {
+      identifier: 'upload',
+      limit: 10,
+      windowMs: 60 * 1000,
+    });
+
+    if (!rateLimit.success && rateLimit.response) {
+      return rateLimit.response;
+    }
+
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
     const password = (formData.get('password') as string) || '';

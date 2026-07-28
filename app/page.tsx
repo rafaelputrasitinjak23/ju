@@ -18,6 +18,18 @@ export default function HomePage() {
   const [isMongoConnected, setIsMongoConnected] = useState(false);
 
   useEffect(() => {
+    const handleTabEvent = (e: Event) => {
+      const customEvent = e as CustomEvent<ActiveTab>;
+      if (customEvent.detail) {
+        setActiveTab(customEvent.detail);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    };
+    window.addEventListener('change-tab', handleTabEvent);
+    return () => window.removeEventListener('change-tab', handleTabEvent);
+  }, []);
+
+  useEffect(() => {
     let ignore = false;
     const loadStatus = async () => {
       try {
@@ -77,16 +89,13 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="border-t border-zinc-800/80 bg-zinc-900/90 backdrop-blur-md py-8 px-4 text-zinc-400 text-xs font-outfit mt-16 shadow-xl shadow-black/20">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="w-7 h-7 rounded-lg border border-zinc-800 flex items-center justify-center overflow-hidden bg-zinc-950">
-              <img
-                src="https://rafaelxd.my.id/raw/exnqacv9"
-                alt="RafaelXD Logo"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-            <span className="font-serif-elegant font-bold text-zinc-100 text-sm">RafaelXD File Host</span>
+          <div className="flex items-center">
+            <img
+              src="https://rafaelxd.my.id/raw/sefqmrht"
+              alt="RafaelXD Logo"
+              className="h-10 sm:h-12 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
+              referrerPolicy="no-referrer"
+            />
           </div>
 
           <div className="flex items-center gap-3">
@@ -113,7 +122,7 @@ export default function HomePage() {
               </svg>
             </a>
             <a
-              href="https://www.instagram.com/rafaelputrasitinjak/"
+              href="https://www.instagram.com/rafaelputraasitinjak/"
               target="_blank"
               rel="noopener noreferrer"
               aria-label="Instagram"

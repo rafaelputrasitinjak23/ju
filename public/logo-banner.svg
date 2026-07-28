@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" width="1200" height="400">
+  <defs>
+    <radialGradient id="bannerBg" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#18181c"/>
+      <stop offset="70%" stop-color="#0a0a0c"/>
+      <stop offset="100%" stop-color="#020203"/>
+    </radialGradient>
+
+    <linearGradient id="chrome3D" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="20%" stop-color="#e4e4e7"/>
+      <stop offset="45%" stop-color="#71717a"/>
+      <stop offset="55%" stop-color="#27272a"/>
+      <stop offset="80%" stop-color="#a1a1aa"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+
+    <linearGradient id="ringChromeBanner" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#52525b"/>
+      <stop offset="30%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#27272a"/>
+      <stop offset="100%" stop-color="#d4d4d8"/>
+    </linearGradient>
+
+    <filter id="glowBanner" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="10" stdDeviation="16" flood-color="#000000" flood-opacity="0.9"/>
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge>
+        <feMergeNode in="blur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="400" fill="url(#bannerBg)"/>
+
+  <!-- Background Particles & Speed Lines -->
+  <g opacity="0.25" stroke="#ffffff" stroke-width="1.5">
+    <line x1="100" y1="50" x2="350" y2="180"/>
+    <line x1="850" y1="220" x2="1100" y2="350"/>
+    <line x1="200" y1="350" x2="450" y2="200"/>
+    <line x1="750" y1="80" x2="1000" y2="220"/>
+  </g>
+
+  <!-- Center Emblem Ring behind Text -->
+  <g filter="url(#glowBanner)">
+    <circle cx="600" cy="200" r="140" fill="none" stroke="url(#ringChromeBanner)" stroke-width="18" stroke-dasharray="280 40 120 30" transform="rotate(-25 600 200)"/>
+    <polygon points="250,340 950,60 900,45 200,325" fill="url(#chrome3D)" opacity="0.6"/>
+
+    <!-- Full Text "RafaelXD" -->
+    <text x="600" y="240" 
+          font-family="'Outfit', 'Impact', 'Arial Black', sans-serif" 
+          font-weight="900" 
+          font-style="italic" 
+          font-size="140" 
+          letter-spacing="-2"
+          text-anchor="middle"
+          fill="url(#chrome3D)" 
+          stroke="#09090b" 
+          stroke-width="8" 
+          stroke-linejoin="miter"
+          filter="url(#glowBanner)">
+      RafaelXD
+    </text>
+  </g>
+</svg>

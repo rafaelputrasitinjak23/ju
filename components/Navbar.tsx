@@ -30,26 +30,16 @@ export default function Navbar({
     <header className="sticky top-0 z-40 bg-zinc-900/90 backdrop-blur-md border-b border-zinc-800/80 px-4 lg:px-12 py-3.5 transition-all shadow-lg shadow-black/20">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
         {/* Brand Logo */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl border border-zinc-800 flex items-center justify-center shadow-xs overflow-hidden bg-zinc-950 shrink-0">
-            <img
-              src="https://rafaelxd.my.id/raw/exnqacv9"
-              alt="RafaelXD Logo"
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-serif-elegant text-xl font-bold tracking-tight text-zinc-100">RafaelXD</span>
-              <span className="text-[10px] font-mono-code font-semibold tracking-wider uppercase px-2 py-0.5 rounded bg-zinc-800 text-zinc-300 border border-zinc-700">
-                v1.0
-              </span>
-            </div>
-            <p className="text-xs text-zinc-400 font-outfit hidden sm:block">
-              Host File
-            </p>
-          </div>
+        <div className="flex items-center gap-2.5 cursor-pointer group py-0.5" onClick={() => handleTabClick('upload')}>
+          <img
+            src="https://rafaelxd.my.id/raw/sefqmrht"
+            alt="RafaelXD Logo"
+            className="h-11 sm:h-12 md:h-14 w-auto object-contain group-hover:scale-105 transition-transform duration-200"
+            referrerPolicy="no-referrer"
+          />
+          <span className="text-[10px] sm:text-xs font-mono-code font-semibold tracking-wider uppercase px-2 py-0.5 rounded-md bg-zinc-800/90 text-zinc-300 border border-zinc-700/80 shadow-xs shrink-0">
+            v1.0
+          </span>
         </div>
 
         {/* Desktop Navigation Tabs */}
