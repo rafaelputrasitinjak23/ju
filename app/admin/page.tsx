@@ -6,7 +6,6 @@ import { Shield, Key, Send, Database, CheckCircle2, AlertTriangle, RefreshCw, Ar
 import { parseJsonResponse } from '@/lib/utils';
 import FileExplorer from '@/components/FileExplorer';
 import ShortUrlSection from '@/components/ShortUrlSection';
-import ConfirmModal from '@/components/ConfirmModal';
 
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'settings' | 'files' | 'shortener'>('settings');
@@ -34,7 +33,6 @@ export default function AdminPage() {
 
   const [testingTg, setTestingTg] = useState(false);
   const [testingMongo, setTestingMongo] = useState(false);
-  const [adminErrorModal, setAdminErrorModal] = useState<string | null>(null);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,10 +203,10 @@ export default function AdminPage() {
         setSaveSuccess('Konfigurasi server berhasil disimpan!');
         fetchSettings();
       } else {
-        setAdminErrorModal('Gagal menyimpan: ' + data.error);
+        alert('Gagal menyimpan: ' + data.error);
       }
     } catch (e: any) {
-      setAdminErrorModal('Terjadi kesalahan: ' + e.message);
+      alert('Terjadi kesalahan: ' + e.message);
     } finally {
       setSaving(false);
     }
@@ -554,17 +552,6 @@ export default function AdminPage() {
           </div>
         )}
       </main>
-
-      <ConfirmModal
-        isOpen={!!adminErrorModal}
-        title="Pemberitahuan Admin"
-        message={adminErrorModal || ''}
-        confirmText="Tutup"
-        type="danger"
-        showCancel={false}
-        onConfirm={() => setAdminErrorModal(null)}
-        onCancel={() => setAdminErrorModal(null)}
-      />
     </div>
   );
 }

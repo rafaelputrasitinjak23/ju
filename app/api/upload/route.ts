@@ -3,7 +3,6 @@ import { sendFileToTelegram } from '@/lib/telegram';
 import { saveFileRecord } from '@/lib/db';
 import { FileRecord } from '@/lib/types';
 import { checkRateLimit } from '@/lib/rateLimiter';
-import { getAppBaseUrl } from '@/lib/utils';
 
 // Simple nano ID generator
 function generateShortId(length = 8): string {
@@ -29,68 +28,26 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    const rawFile = formData.get('file');
+    const file = formData.get('file') as File | null;
     const password = (formData.get('password') as string) || '';
 
-    if (!rawFile) {
+    if (!file) {
       return NextResponse.json({ success: false, error: 'File tidak ditemukan dalam form upload.' }, { status: 400 });
     }
 
-    // Check if rawFile is a string (e.g. developer passed path string or text instead of File/Blob object)
-    if (typeof rawFile === 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Input file berupa string/teks path, bukan konten file binary. Jika dari Node.js/Script JS, baca file dengan fs.readFileSync(filePath) lalu bungkus dengan new Blob([buffer]) sebelum di-append ke FormData.',
-        },
-        { status: 400 }
-      );
-    }
-
-    const file = rawFile as File;
-
     const MAX_FILE_SIZE = 200 * 1024 * 1024; // 200MB
-    if (file.size && file.size > MAX_FILE_SIZE) {
+    if (file.size > MAX_FILE_SIZE) {
       return NextResponse.json(
         { success: false, error: 'Ukuran file melebihi batas maksimal 200MB.' },
         { status: 400 }
       );
     }
 
-    // Safely extract Buffer from file / blob
-    let buffer: Buffer;
-    if (typeof (file as any).arrayBuffer === 'function') {
-      const arrayBuffer = await file.arrayBuffer();
-      buffer = Buffer.from(arrayBuffer);
-    } else if (Buffer.isBuffer(file)) {
-      buffer = file as Buffer;
-    } else if (file instanceof ArrayBuffer) {
-      buffer = Buffer.from(file);
-    } else if (file instanceof Uint8Array) {
-      buffer = Buffer.from(file.buffer, file.byteOffset, file.byteLength);
-    } else if (typeof (file as any).stream === 'function') {
-      const chunks: Uint8Array[] = [];
-      const reader = (file as any).stream().getReader();
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        if (value) chunks.push(value);
-      }
-      buffer = Buffer.concat(chunks);
-    } else if ((file as any).buffer && (file as any).buffer instanceof ArrayBuffer) {
-      buffer = Buffer.from((file as any).buffer);
-    } else {
-      return NextResponse.json(
-        { success: false, error: 'Format file tidak dapat dibaca oleh server (tidak memiliki arrayBuffer/stream/buffer).' },
-        { status: 400 }
-      );
-    }
-
-    const fileName = file.name || 'uploaded_file';
-    const fileType = file.type || 'application/octet-stream';
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
 
     // 1. Send file to Telegram Chat via Bot API
-    const telegramRes = await sendFileToTelegram(buffer, fileName, fileType);
+    const telegramRes = await sendFileToTelegram(buffer, file.name, file.type);
 
     if (!telegramRes.ok || !telegramRes.file_id) {
       return NextResponse.json(
@@ -108,9 +65,9 @@ export async function POST(req: NextRequest) {
 
     const fileRecord: FileRecord = {
       id: fileSlug,
-      originalName: file.name || fileName,
-      size: file.size || buffer.length,
-      mimeType: file.type || fileType,
+      originalName: file.name,
+      size: file.size,
+      mimeType: file.type || 'application/octet-stream',
       telegramFileId: telegramRes.file_id,
       telegramUniqueId: telegramRes.file_unique_id || '',
       telegramChatId: telegramRes.chat_id || '',
@@ -126,7 +83,7 @@ export async function POST(req: NextRequest) {
     // 3. Save to Database (MongoDB + Local Fallback)
     await saveFileRecord(fileRecord);
 
-    const appUrl = getAppBaseUrl(req);
+    const appUrl = process.env.APP_URL || '';
     const shareUrl = `${appUrl}/f/${fileSlug}`;
     const directDownloadUrl = `${appUrl}/api/raw/${fileSlug}?download=true`;
 

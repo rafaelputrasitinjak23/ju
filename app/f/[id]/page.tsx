@@ -381,22 +381,11 @@ export default function FilePage({ params }: { params: Promise<{ id: string }> }
                     <input
                       type="text"
                       readOnly
-                      value={
-                        file.fullShareUrl && file.fullShareUrl.startsWith('http') && !file.fullShareUrl.includes('MY_APP_URL')
-                          ? file.fullShareUrl
-                          : (typeof window !== 'undefined' ? `${window.location.origin}/f/${file.id}` : `/f/${file.id}`)
-                      }
+                      value={file.fullShareUrl}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-200 font-mono-code focus:outline-none"
                     />
                     <button
-                      onClick={() =>
-                        copyToClipboard(
-                          file.fullShareUrl && file.fullShareUrl.startsWith('http') && !file.fullShareUrl.includes('MY_APP_URL')
-                            ? file.fullShareUrl
-                            : (typeof window !== 'undefined' ? `${window.location.origin}/f/${file.id}` : `/f/${file.id}`),
-                          'share'
-                        )
-                      }
+                      onClick={() => copyToClipboard(file.fullShareUrl, 'share')}
                       className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium rounded-xl border border-slate-700 transition-all shrink-0 flex items-center gap-1.5"
                     >
                       <Copy className="w-3.5 h-3.5 text-slate-400" />
