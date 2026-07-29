@@ -30,7 +30,6 @@ const path = require('path');
 
 async function uploadFromFilePath(filePath, password = '') {
   try {
-    // 1. Cek & baca file dari path lokal
     if (!fs.existsSync(filePath)) {
       throw new Error(\`File tidak ditemukan di path: \${filePath}\`);
     }
@@ -38,7 +37,6 @@ async function uploadFromFilePath(filePath, password = '') {
     const fileBuffer = fs.readFileSync(filePath);
     const fileName = path.basename(filePath);
 
-    // 2. Buat Blob dari Buffer (PENTING: Sertakan fileName di parameter ke-3)
     const fileBlob = new Blob([fileBuffer]);
 
     const formData = new FormData();
@@ -46,8 +44,6 @@ async function uploadFromFilePath(filePath, password = '') {
     if (password) {
       formData.append('password', password);
     }
-
-    // 3. Request ke API Server
     const response = await fetch('${domain}/api/upload', {
       method: 'POST',
       body: formData
@@ -69,8 +65,8 @@ async function uploadFromFilePath(filePath, password = '') {
   }
 }
 
-// Contoh Penggunaan dari File Path:
-// uploadFromFilePath('/path/to/lokal_file.zip', 'rahasia123');`,
+uploadFromFilePath('/path/to/lokal_file.zip', 'password123');
+// password itu opsional, bisa dikosongkan jika tidak ingin memberi password pada file yang diunggah.`,
 
       nodejs: `// Upload File (Node.js + Axios & Form-Data)
 const axios = require('axios');
