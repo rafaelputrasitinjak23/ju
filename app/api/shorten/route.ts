@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { saveShortUrl, getShortUrlById, getAllShortUrls, deleteShortUrl } from '@/lib/db';
 import { ShortUrlRecord } from '@/lib/types';
 import { checkRateLimit } from '@/lib/rateLimiter';
+import { getAppBaseUrl } from '@/lib/utils';
 
 function generateShortCode(length = 6): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
@@ -71,9 +72,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const host = req.headers.get('host') || 'localhost:3000';
-    const protocol = req.headers.get('x-forwarded-proto') || 'https';
-    const appUrl = process.env.APP_URL || `${protocol}://${host}`;
+    const appUrl = getAppBaseUrl(req);
 
     const record: ShortUrlRecord = {
       id: code,

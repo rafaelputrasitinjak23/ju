@@ -130,6 +130,13 @@ export default function Uploader({ onUploadSuccess, onOpenSettings, isTelegramCo
         throw new Error(data.error || 'Gagal mengunggah file.');
       }
 
+      if (data.fileUrl && data.fileUrl.includes('MY_APP_URL') && typeof window !== 'undefined') {
+        data.fileUrl = data.fileUrl.replace(/MY_APP_URL/g, window.location.origin);
+      }
+      if (data.downloadUrl && data.downloadUrl.includes('MY_APP_URL') && typeof window !== 'undefined') {
+        data.downloadUrl = data.downloadUrl.replace(/MY_APP_URL/g, window.location.origin);
+      }
+
       setUploadProgress(100);
       setUploadResult(data);
       onUploadSuccess();
@@ -437,11 +444,22 @@ export default function Uploader({ onUploadSuccess, onOpenSettings, isTelegramCo
               <input
                 type="text"
                 readOnly
-                value={uploadResult.fileUrl}
+                value={
+                  uploadResult.fileUrl && uploadResult.fileUrl.startsWith('http') && !uploadResult.fileUrl.includes('MY_APP_URL')
+                    ? uploadResult.fileUrl
+                    : (typeof window !== 'undefined' ? `${window.location.origin}/f/${uploadResult.file.id}` : `/f/${uploadResult.file.id}`)
+                }
                 className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-200 font-mono-code focus:outline-none"
               />
               <button
-                onClick={() => copyToClipboard(uploadResult.fileUrl, 'public')}
+                onClick={() =>
+                  copyToClipboard(
+                    uploadResult.fileUrl && uploadResult.fileUrl.startsWith('http') && !uploadResult.fileUrl.includes('MY_APP_URL')
+                      ? uploadResult.fileUrl
+                      : (typeof window !== 'undefined' ? `${window.location.origin}/f/${uploadResult.file.id}` : `/f/${uploadResult.file.id}`),
+                    'public'
+                  )
+                }
                 className="px-4 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium rounded-xl border border-zinc-700 transition-all shrink-0 flex items-center gap-1.5"
               >
                 <Copy className="w-3.5 h-3.5 text-zinc-400" />

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Search, FileText, Film, Music, Image as ImageIcon, Archive, File, Copy, Download, Eye, Trash2, ExternalLink, Lock, RefreshCw, Send, Database, Filter, Link as LinkIcon, Check, Cloud } from 'lucide-react';
 import { parseJsonResponse } from '@/lib/utils';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface FileExplorerProps {
   onRefreshTrigger?: number;
@@ -29,6 +30,12 @@ export default function FileExplorer({ onRefreshTrigger }: FileExplorerProps) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [copiedShortId, setCopiedShortId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+  const [modalNotice, setModalNotice] = useState<{ isOpen: boolean; message: string; type?: 'danger' | 'warning' | 'info' | 'success' }>({
+    isOpen: false,
+    message: '',
+    type: 'info'
+  });
   const [isMongoUsed, setIsMongoUsed] = useState(false);
 
   const fetchFiles = async () => {
@@ -81,11 +88,14 @@ export default function FileExplorer({ onRefreshTrigger }: FileExplorerProps) {
     };
   }, [search, category, onRefreshTrigger]);
 
-  const handleDelete = async (id: string, name: string) => {
-    if (!confirm(`Hapus file "${name}" secara permanen? Data file di Cloud Storage & MongoDB akan dihapus.`)) {
-      return;
-    }
+  const handleDelete = (id: string, name: string) => {
+    setDeleteConfirm({ id, name });
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteConfirm) return;
+    const { id } = deleteConfirm;
+    setDeleteConfirm(null);
     setDeletingId(id);
     try {
       const res = await fetch(`/api/files?id=${id}`, { method: 'DELETE' });
@@ -93,10 +103,10 @@ export default function FileExplorer({ onRefreshTrigger }: FileExplorerProps) {
       if (data.success) {
         setFiles((prev) => prev.filter((f) => f.id !== id));
       } else {
-        alert(data.error || 'Gagal menghapus file.');
+        setModalNotice({ isOpen: true, message: data.error || 'Gagal menghapus file.', type: 'danger' });
       }
     } catch (e: any) {
-      alert('Error: ' + e.message);
+      setModalNotice({ isOpen: true, message: 'Error: ' + e.message, type: 'danger' });
     } finally {
       setDeletingId(null);
     }
@@ -298,6 +308,32 @@ export default function FileExplorer({ onRefreshTrigger }: FileExplorerProps) {
           ))}
         </div>
       )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        title="Hapus File Permanen"
+        message={`Hapus file "${deleteConfirm?.name || ''}" secara permanen?`}
+        description="Data file di Cloud Storage & MongoDB akan terhapus dan tidak bisa dikembalikan."
+        confirmText="Ya, Hapus File"
+        cancelText="Batal"
+        type="danger"
+        loading={deletingId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirm(null)}
+      />
+
+      {/* Notice Alert Modal */}
+      <ConfirmModal
+        isOpen={modalNotice.isOpen}
+        title="Pemberitahuan"
+        message={modalNotice.message}
+        confirmText="Mengerti"
+        type={modalNotice.type || 'info'}
+        showCancel={false}
+        onConfirm={() => setModalNotice({ isOpen: false, message: '' })}
+        onCancel={() => setModalNotice({ isOpen: false, message: '' })}
+      />
     </div>
   );
 }

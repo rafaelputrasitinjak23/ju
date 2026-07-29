@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X, Send, Database, CheckCircle2, AlertTriangle, RefreshCw, Key, MessageSquare, ExternalLink, ShieldAlert } from 'lucide-react';
 import { parseJsonResponse } from '@/lib/utils';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
   const [mongoTestStatus, setMongoTestStatus] = useState<{ ok?: boolean; message?: string }>({});
 
   const [showTutorial, setShowTutorial] = useState(false);
+  const [errorModal, setErrorModal] = useState<string | null>(null);
 
   const fetchSettings = async () => {
     setLoading(true);
@@ -158,10 +160,10 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
         onSettingsSaved();
         onClose();
       } else {
-        alert(data.error || 'Gagal menyimpan pengaturan.');
+        setErrorModal(data.error || 'Gagal menyimpan pengaturan.');
       }
     } catch (e: any) {
-      alert('Error saat menyimpan: ' + e.message);
+      setErrorModal('Error saat menyimpan: ' + e.message);
     } finally {
       setSaving(false);
     }
@@ -385,6 +387,17 @@ export default function SettingsModal({ isOpen, onClose, onSettingsSaved }: Sett
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!errorModal}
+        title="Gagal Menyimpan"
+        message={errorModal || ''}
+        confirmText="Tutup"
+        type="danger"
+        showCancel={false}
+        onConfirm={() => setErrorModal(null)}
+        onCancel={() => setErrorModal(null)}
+      />
     </div>
   );
 }

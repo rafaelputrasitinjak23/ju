@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getFileRecordById, incrementFileStats } from '@/lib/db';
+import { getAppBaseUrl } from '@/lib/utils';
 
 export async function GET(
   req: NextRequest,
@@ -16,7 +17,7 @@ export async function GET(
     // Increment view count
     await incrementFileStats(id, 'view');
 
-    const appUrl = process.env.APP_URL || '';
+    const appUrl = getAppBaseUrl(req);
 
     return NextResponse.json({
       success: true,

@@ -23,6 +23,7 @@ import {
 import { QRCodeSVG } from 'qrcode.react';
 import { parseJsonResponse } from '@/lib/utils';
 import { ShortUrlRecord } from '@/lib/types';
+import ConfirmModal from '@/components/ConfirmModal';
 
 interface ShortUrlSectionProps {
   showList?: boolean;
@@ -43,6 +44,12 @@ export default function ShortUrlSection({ showList = true }: ShortUrlSectionProp
   const [fetchingList, setFetchingList] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [modalNotice, setModalNotice] = useState<{ isOpen: boolean; message: string; type?: 'danger' | 'warning' | 'info' | 'success' }>({
+    isOpen: false,
+    message: '',
+    type: 'info'
+  });
 
   const getDomain = () => {
     if (typeof window !== 'undefined') {
@@ -114,7 +121,13 @@ export default function ShortUrlSection({ showList = true }: ShortUrlSectionProp
       const data = await parseJsonResponse(res);
 
       if (data.success) {
-        setCreatedUrl(data.shortUrl);
+        let finalUrl = data.shortUrl;
+        if (finalUrl && finalUrl.includes('MY_APP_URL') && typeof window !== 'undefined') {
+          finalUrl = finalUrl.replace(/MY_APP_URL/g, window.location.origin);
+        } else if (!finalUrl || !finalUrl.startsWith('http')) {
+          finalUrl = `${domain}/s/${data.record?.id || customAlias}`;
+        }
+        setCreatedUrl(finalUrl);
         setTargetUrl('');
         setCustomAlias('');
         setTitle('');
@@ -135,9 +148,14 @@ export default function ShortUrlSection({ showList = true }: ShortUrlSectionProp
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus Short URL ini?')) return;
+  const handleDelete = (id: string) => {
+    setDeleteConfirmId(id);
+  };
 
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    const id = deleteConfirmId;
+    setDeleteConfirmId(null);
     setDeletingId(id);
     try {
       const res = await fetch(`/api/shorten?id=${encodeURIComponent(id)}`, {
@@ -147,10 +165,10 @@ export default function ShortUrlSection({ showList = true }: ShortUrlSectionProp
       if (data.success) {
         setShortUrls((prev) => prev.filter((item) => item.id !== id));
       } else {
-        alert(data.error || 'Gagal menghapus Short URL.');
+        setModalNotice({ isOpen: true, message: data.error || 'Gagal menghapus Short URL.', type: 'danger' });
       }
     } catch (err: any) {
-      alert('Terjadi kesalahan: ' + err.message);
+      setModalNotice({ isOpen: true, message: 'Terjadi kesalahan: ' + err.message, type: 'danger' });
     } finally {
       setDeletingId(null);
     }
@@ -540,6 +558,31 @@ export default function ShortUrlSection({ showList = true }: ShortUrlSectionProp
           )}
         </div>
       )}
+
+      {/* Confirm Delete Modal */}
+      <ConfirmModal
+        isOpen={!!deleteConfirmId}
+        title="Hapus Short URL"
+        message="Apakah Anda yakin ingin menghapus Short URL ini?"
+        confirmText="Ya, Hapus"
+        cancelText="Batal"
+        type="danger"
+        loading={deletingId !== null}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
+
+      {/* Notice Alert Modal */}
+      <ConfirmModal
+        isOpen={modalNotice.isOpen}
+        title="Pemberitahuan"
+        message={modalNotice.message}
+        confirmText="Mengerti"
+        type={modalNotice.type || 'info'}
+        showCancel={false}
+        onConfirm={() => setModalNotice({ isOpen: false, message: '' })}
+        onCancel={() => setModalNotice({ isOpen: false, message: '' })}
+      />
     </div>
   );
 }
