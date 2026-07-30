@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Shield, Key, Send, Database, CheckCircle2, AlertTriangle, RefreshCw, ArrowLeft, Lock, ExternalLink, Server, HardDrive, Link as LinkIcon, Settings, User } from 'lucide-react';
+import { Shield, Key, Send, Database, CheckCircle2, AlertTriangle, RefreshCw, ArrowLeft, Lock, ExternalLink, Server, HardDrive, Link as LinkIcon, Settings, User, FileCode, Copy, Check, QrCode } from 'lucide-react';
 import { parseJsonResponse } from '@/lib/utils';
 import FileExplorer from '@/components/FileExplorer';
 import ShortUrlSection from '@/components/ShortUrlSection';
 import ConfirmModal from '@/components/ConfirmModal';
 
 export default function AdminPage() {
-  const [activeTab, setActiveTab] = useState<'settings' | 'files' | 'shortener'>('settings');
+  const [activeTab, setActiveTab] = useState<'settings' | 'files' | 'shortener' | 'rawtext'>('settings');
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
     if (typeof window !== 'undefined') {
       return sessionStorage.getItem('admin_authenticated') === 'true';
@@ -35,6 +35,89 @@ export default function AdminPage() {
   const [testingTg, setTestingTg] = useState(false);
   const [testingMongo, setTestingMongo] = useState(false);
   const [adminErrorModal, setAdminErrorModal] = useState<string | null>(null);
+
+  // Raw Text Creator State (Admin Only)
+  const [rawTitle, setRawTitle] = useState('paste.txt');
+  const [rawMimeType, setRawMimeType] = useState('text/plain');
+  const [rawPassword, setRawPassword] = useState('');
+  const [rawContent, setRawContent] = useState('');
+  const [publishingRaw, setPublishingRaw] = useState(false);
+  const [rawSuccessResult, setRawSuccessResult] = useState<{
+    fileId: string;
+    rawUrl: string;
+    shareUrl: string;
+    downloadUrl: string;
+    originalName: string;
+    size: number;
+  } | null>(null);
+  const [rawCopiedType, setRawCopiedType] = useState<string | null>(null);
+
+  const handleCreateRawText = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rawContent.trim()) {
+      setAdminErrorModal('Isi teks raw tidak boleh kosong.');
+      return;
+    }
+
+    setPublishingRaw(true);
+    setRawSuccessResult(null);
+    try {
+      const fileName = rawTitle.trim() || 'paste.txt';
+      const blob = new Blob([rawContent], { type: rawMimeType || 'text/plain' });
+      const formData = new FormData();
+      formData.append('file', blob, fileName);
+      if (rawPassword.trim()) {
+        formData.append('password', rawPassword.trim());
+      }
+
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await parseJsonResponse(res);
+
+      if (data.success && data.file) {
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        const rawLink = `${origin}/raw/${data.file.id}`;
+        const shareLink = `${origin}/f/${data.file.id}`;
+        const downloadLink = `${origin}/api/raw/${data.file.id}?download=true`;
+
+        setRawSuccessResult({
+          fileId: data.file.id,
+          rawUrl: rawLink,
+          shareUrl: shareLink,
+          downloadUrl: downloadLink,
+          originalName: data.file.originalName || fileName,
+          size: data.file.size || blob.size,
+        });
+
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          try {
+            await navigator.clipboard.writeText(rawLink);
+            setRawCopiedType('auto_raw');
+            setTimeout(() => setRawCopiedType(null), 3500);
+          } catch (cErr) {
+            console.error(cErr);
+          }
+        }
+      } else {
+        setAdminErrorModal(data.error || 'Gagal membuat raw text.');
+      }
+    } catch (err: any) {
+      setAdminErrorModal(err.message || 'Terjadi kesalahan saat membuat raw text.');
+    } finally {
+      setPublishingRaw(false);
+    }
+  };
+
+  const copyRawTextUrl = (url: string, typeKey: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(url);
+      setRawCopiedType(typeKey);
+      setTimeout(() => setRawCopiedType(null), 2000);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -344,6 +427,18 @@ export default function AdminPage() {
                 <LinkIcon className="w-4 h-4 text-amber-400" />
                 <span>Kelola Short URL</span>
               </button>
+
+              <button
+                onClick={() => setActiveTab('rawtext')}
+                className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'rawtext'
+                    ? 'bg-zinc-800 text-zinc-100 border border-zinc-700 shadow-xs'
+                    : 'text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                <FileCode className="w-4 h-4 text-purple-400" />
+                <span>Buat Raw Text / Paste</span>
+              </button>
             </div>
 
             {/* Tab 1: Settings */}
@@ -551,9 +646,260 @@ export default function AdminPage() {
             {activeTab === 'shortener' && (
               <ShortUrlSection />
             )}
+
+            {/* Tab 4: Raw Text / Paste Creator (Admin Only) */}
+            {activeTab === 'rawtext' && (
+              <div className="space-y-6 max-w-4xl mx-auto animate-fade-in">
+                <div className="bg-zinc-900/90 backdrop-blur-md border border-zinc-800/90 rounded-3xl p-6 md:p-8 shadow-2xl space-y-6">
+                  <div className="flex items-center gap-3 border-b border-zinc-800 pb-4">
+                    <div className="w-10 h-10 rounded-2xl bg-purple-950/80 border border-purple-800/80 flex items-center justify-center text-purple-400 shrink-0">
+                      <FileCode className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold font-serif-elegant text-white">Buat Raw Text / Paste</h2>
+                      <p className="text-xs text-zinc-400 font-outfit">
+                        Fitur khusus Admin untuk membuat file teks mentah, kode, JSON, atau skrip langsung dengan Direct Raw URL.
+                      </p>
+                    </div>
+                  </div>
+
+                  {rawCopiedType === 'auto_raw' && (
+                    <div className="bg-emerald-950/80 border border-emerald-800 text-emerald-300 px-4 py-2.5 rounded-2xl text-xs font-semibold flex items-center justify-between shadow-sm animate-fade-in">
+                      <span className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Link Direct Raw telah otomatis disalin ke clipboard!</span>
+                      </span>
+                      <span className="text-[10px] font-mono-code bg-emerald-900/80 px-2 py-0.5 rounded text-emerald-200 border border-emerald-700">
+                        Copied
+                      </span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleCreateRawText} className="space-y-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Filename Input */}
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-300 mb-1.5 font-outfit">
+                          Nama File / Judul Paste:
+                        </label>
+                        <input
+                          type="text"
+                          value={rawTitle}
+                          onChange={(e) => setRawTitle(e.target.value)}
+                          placeholder="Contoh: paste.txt, script.js, config.json"
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-100 font-mono-code focus:outline-none focus:border-purple-500 transition-all shadow-xs"
+                          required
+                        />
+                      </div>
+
+                      {/* Format / MIME Type Select */}
+                      <div>
+                        <label className="block text-xs font-semibold text-zinc-300 mb-1.5 font-outfit">
+                          Format Teks / Content Type:
+                        </label>
+                        <select
+                          value={rawMimeType}
+                          onChange={(e) => setRawMimeType(e.target.value)}
+                          className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-100 font-mono-code focus:outline-none focus:border-purple-500 transition-all shadow-xs cursor-pointer"
+                        >
+                          <option value="text/plain">Plain Text (.txt)</option>
+                          <option value="application/json">JSON (.json)</option>
+                          <option value="text/javascript">JavaScript (.js)</option>
+                          <option value="text/html">HTML Document (.html)</option>
+                          <option value="text/css">CSS Stylesheet (.css)</option>
+                          <option value="text/markdown">Markdown (.md)</option>
+                          <option value="text/x-python">Python Script (.py)</option>
+                          <option value="application/xml">XML Document (.xml)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Optional Password Field */}
+                    <div>
+                      <label className="block text-xs font-semibold text-zinc-300 mb-1.5 font-outfit flex items-center justify-between">
+                        <span className="flex items-center gap-1.5">
+                          <Lock className="w-3.5 h-3.5 text-amber-400" />
+                          <span>Password Proteksi (Opsional):</span>
+                        </span>
+                        <span className="text-[10px] text-zinc-500 font-mono-code">Biarkan kosong jika bebas akses</span>
+                      </label>
+                      <input
+                        type="password"
+                        value={rawPassword}
+                        onChange={(e) => setRawPassword(e.target.value)}
+                        placeholder="Kata sandi pembuka raw text..."
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-4 py-2.5 text-xs text-zinc-100 font-mono-code focus:outline-none focus:border-amber-500 transition-all shadow-xs"
+                      />
+                    </div>
+
+                    {/* Textarea for Raw Content */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block text-xs font-semibold text-zinc-300 font-outfit">
+                          Isi Teks / Kode Raw:
+                        </label>
+                        <span className="text-[10px] font-mono-code text-zinc-400">
+                          {rawContent.length} Karakter • {rawContent.split('\n').length} Baris
+                        </span>
+                      </div>
+                      <textarea
+                        value={rawContent}
+                        onChange={(e) => setRawContent(e.target.value)}
+                        placeholder="Paste atau ketikkan kode / teks mentah di sini..."
+                        rows={14}
+                        className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-xs font-mono-code text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-purple-500 transition-all leading-relaxed"
+                        required
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={publishingRaw || !rawContent.trim()}
+                      className="w-full py-3.5 px-6 bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs rounded-xl transition-all shadow-lg shadow-purple-900/30 flex items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      {publishingRaw ? (
+                        <>
+                          <RefreshCw className="w-4 h-4 animate-spin text-white" />
+                          <span>Menerbitkan Raw Text ke Cloud...</span>
+                        </>
+                      ) : (
+                        <>
+                          <FileCode className="w-4 h-4 text-white" />
+                          <span>Buat & Terbitkan Raw Text</span>
+                        </>
+                      )}
+                    </button>
+                  </form>
+
+                  {/* Success Result Card */}
+                  {rawSuccessResult && (
+                    <div className="mt-6 pt-6 border-t border-zinc-800 space-y-4 animate-fade-in">
+                      <div className="flex items-center gap-2.5 text-emerald-400">
+                        <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                        <span className="text-sm font-bold font-serif-elegant">Raw Text Berhasil Diterbitkan!</span>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1 font-mono-code">
+                            Direct Raw URL (Akses Teks Mentah):
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              readOnly
+                              value={rawSuccessResult.rawUrl}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-purple-300 font-mono-code focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => copyRawTextUrl(rawSuccessResult.rawUrl, 'res_raw')}
+                              className="px-3.5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium rounded-xl border border-zinc-700 transition-all shrink-0 flex items-center gap-1.5"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>{rawCopiedType === 'res_raw' ? 'Tersalin!' : 'Salin'}</span>
+                            </button>
+                            <a
+                              href={rawSuccessResult.rawUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-2.5 bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-800 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shrink-0"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Buka Raw</span>
+                            </a>
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-[11px] font-semibold text-zinc-400 mb-1 font-mono-code">
+                            Link Halaman Preview File (/f/...):
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              readOnly
+                              value={rawSuccessResult.shareUrl}
+                              className="w-full bg-zinc-950 border border-zinc-800 rounded-xl px-3.5 py-2.5 text-xs text-zinc-200 font-mono-code focus:outline-none"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => copyRawTextUrl(rawSuccessResult.shareUrl, 'res_share')}
+                              className="px-3.5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 text-xs font-medium rounded-xl border border-zinc-700 transition-all shrink-0 flex items-center gap-1.5"
+                            >
+                              <Copy className="w-3.5 h-3.5 text-zinc-400" />
+                              <span>{rawCopiedType === 'res_share' ? 'Tersalin!' : 'Salin'}</span>
+                            </button>
+                            <a
+                              href={rawSuccessResult.shareUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="px-3.5 py-2.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 border border-zinc-700 text-xs font-semibold rounded-xl transition-all flex items-center gap-1 shrink-0"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span>Buka Page</span>
+                            </a>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
+
+      {/* Footer matching Home & File Pages */}
+      <footer className="border-t border-zinc-800/80 bg-zinc-900/90 backdrop-blur-md py-8 px-4 text-zinc-400 text-xs font-outfit mt-16 shadow-xl shadow-black/20">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center">
+            <img
+              src="https://rafaelxd.my.id/raw/sefqmrht"
+              alt="RafaelXD Logo"
+              className="h-10 sm:h-12 md:h-14 w-auto object-contain opacity-90 hover:opacity-100 transition-opacity"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <a
+              href="https://whatsapp.com/channel/0029VbAjoElLI8YVzXxn7H0j"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="WhatsApp Channel"
+              className="w-8 h-8 rounded-lg bg-zinc-800/80 border border-zinc-700/80 flex items-center justify-center text-zinc-300 hover:text-[#25D366] hover:border-[#25D366]/50 hover:bg-emerald-950/30 transition-all"
+            >
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M12.011 2C6.5 2 2.022 6.478 2.022 11.989c0 1.942.556 3.75 1.517 5.283L2 22l4.889-1.511a9.92 9.92 0 0 0 5.122 1.489C17.522 21.978 22 17.5 22 11.989 22 6.478 17.522 2 12.011 2zm0 18.178c-1.633 0-3.156-.444-4.467-1.222l-.322-.189-3.3.889.889-3.211-.211-.333A8.15 8.15 0 0 1 3.844 11.99c0-4.5 3.656-8.156 8.167-8.156 4.5 0 8.156 3.656 8.156 8.156s-3.656 8.189-8.156 8.189zm4.489-6.133c-.244-.122-1.456-.722-1.678-.8-.222-.089-.389-.122-.556.122-.167.244-.656.822-.8 1-.144.178-.289.2-.533.078-.244-.122-1.033-.378-1.967-1.211-.722-.644-1.211-1.444-1.356-1.689-.144-.244-.011-.378.111-.5.111-.111.244-.289.367-.433.122-.144.167-.244.244-.4.078-.167.044-.311-.022-.433-.067-.122-.556-1.333-.756-1.833-.2-.489-.4-.422-.556-.433h-.478c-.167 0-.444.067-.678.322-.233.256-.889.867-.889 2.111 0 1.244.911 2.444 1.033 2.611.122.167 1.789 2.733 4.333 3.833.611.267 1.089.422 1.456.544.611.189 1.167.167 1.611.1.489-.078 1.456-.589 1.667-1.156.211-.567.211-1.056.144-1.156-.067-.1-.233-.167-.478-.289z"/>
+              </svg>
+            </a>
+            <a
+              href="https://www.youtube.com/@RafaelXD_offc"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="YouTube Channel"
+              className="w-8 h-8 rounded-lg bg-zinc-800/80 border border-zinc-700/80 flex items-center justify-center text-zinc-300 hover:text-[#FF0000] hover:border-[#FF0000]/50 hover:bg-rose-950/30 transition-all"
+            >
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+            </a>
+            <a
+              href="https://www.instagram.com/rafaelputrasitinjak/"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Instagram"
+              className="w-8 h-8 rounded-lg bg-zinc-800/80 border border-zinc-700/80 flex items-center justify-center text-zinc-300 hover:text-[#E4405F] hover:border-[#E4405F]/50 hover:bg-pink-950/30 transition-all"
+            >
+              <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </footer>
 
       <ConfirmModal
         isOpen={!!adminErrorModal}
